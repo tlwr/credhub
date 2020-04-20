@@ -43,6 +43,7 @@ dependencies {
     implementation("org.bouncycastle:bcpkix-fips:${bcpkixFipsVersion}")
 
     implementation("org.apache.commons:commons-lang3:${apacheCommonsLang3Version}")
+    implementation("commons-codec:commons-codec:${commonsCodecVersion}")
 }
 
 dependencyManagement {

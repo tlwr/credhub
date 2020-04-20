@@ -62,6 +62,7 @@ dependencies {
     implementation("org.bouncycastle:bcpkix-fips:${bcpkixFipsVersion}")
 
     implementation("org.apache.commons:commons-lang3:${apacheCommonsLang3Version}")
+    implementation("commons-codec:commons-codec:${commonsCodecVersion}")
 
     //gRPC
     implementation "com.google.api.grpc:proto-google-common-protos:1.12.0"
