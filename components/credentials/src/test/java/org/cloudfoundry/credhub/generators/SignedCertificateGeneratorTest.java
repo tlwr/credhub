@@ -52,6 +52,8 @@ import static org.cloudfoundry.credhub.utils.CertificateStringConstants.CERTSTRA
 import static org.cloudfoundry.credhub.utils.CertificateStringConstants.CERTSTRAP_GENERATED_CA_PRIVATE_KEY;
 import static org.cloudfoundry.credhub.utils.TestConstants.TEST_CA_WITH_DIFFERENT_SKID;
 import static org.cloudfoundry.credhub.utils.TestConstants.TEST_KEY_WITH_DIFFERENT_SKID;
+import static org.cloudfoundry.credhub.utils.TestConstants.TEST_CA_GENERATED_BY_BOSH;
+import static org.cloudfoundry.credhub.utils.TestConstants.TEST_KEY_GENERATED_BY_BOSH;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.nullValue;
@@ -219,6 +221,24 @@ public class SignedCertificateGeneratorTest {
   public void getSignedByIssuer_withNonGeneratedSubjectKeyIdentifier_setsAuthorityKeyIdentifier() throws Exception {
     final X509Certificate caCertificate = new CertificateReader(TEST_CA_WITH_DIFFERENT_SKID).getCertificate();
     PrivateKey caPrivateKey = PrivateKeyReader.getPrivateKey(TEST_KEY_WITH_DIFFERENT_SKID);
+
+    final X509Certificate generatedCert = subject
+            .getSignedByIssuer(generatedCertificateKeyPair, certificateGenerationParameters, caCertificate, caPrivateKey);
+
+    final byte[] authorityKeyIdDer = generatedCert.getExtensionValue(Extension.authorityKeyIdentifier.getId());
+    final AuthorityKeyIdentifier authorityKeyIdentifier =
+            AuthorityKeyIdentifier.getInstance(parseExtensionValue(authorityKeyIdDer));
+
+    final byte[] subjectKeyIdDer = caCertificate.getExtensionValue(Extension.subjectKeyIdentifier.getId());
+    SubjectKeyIdentifier subjectKeyIdentifier = SubjectKeyIdentifier.getInstance(parseExtensionValue(subjectKeyIdDer));
+
+    assertThat(authorityKeyIdentifier.getKeyIdentifier(), equalTo(subjectKeyIdentifier.getKeyIdentifier()));
+  }
+
+  @Test
+  public void getSignedByIssuer_usingACertificateAuthorityGeneratedByBOSH_setsAuthorityKeyIdentifierCorrectly() throws Exception {
+    final X509Certificate caCertificate = new CertificateReader(TEST_CA_GENERATED_BY_BOSH).getCertificate();
+    PrivateKey caPrivateKey = PrivateKeyReader.getPrivateKey(TEST_KEY_GENERATED_BY_BOSH);
 
     final X509Certificate generatedCert = subject
             .getSignedByIssuer(generatedCertificateKeyPair, certificateGenerationParameters, caCertificate, caPrivateKey);
