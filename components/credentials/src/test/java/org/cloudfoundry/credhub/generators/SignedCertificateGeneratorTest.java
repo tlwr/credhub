@@ -189,25 +189,71 @@ public class SignedCertificateGeneratorTest {
   }
 
   @Test
-  public void getSignedByIssuer_generatesACertificateWithTheRightValues() throws Exception {
+  public void getSignedByIssuer_generatesACertificateWithTheCorrectIssuerAndSubject() throws Exception {
     final X509Certificate generatedCertificate = subject
       .getSignedByIssuer(generatedCertificateKeyPair, certificateGenerationParameters,
         certificateAuthorityWithSubjectKeyId, issuerKey.getPrivate());
 
     assertThat(generatedCertificate.getIssuerDN().getName(), containsString("CN=ca DN"));
     assertThat(generatedCertificate.getIssuerDN().getName(), containsString("O=credhub"));
+    assertThat(generatedCertificate.getSubjectDN().toString(), containsString("CN=my cert name"));
+  }
+
+  @Test
+  public void getSignedByIssuer_generatesACertificateWithTheCorrectSerialNumber() throws Exception {
+    final X509Certificate generatedCertificate = subject
+      .getSignedByIssuer(generatedCertificateKeyPair, certificateGenerationParameters,
+        certificateAuthorityWithSubjectKeyId, issuerKey.getPrivate());
 
     assertThat(generatedCertificate.getSerialNumber(), equalTo(BigInteger.valueOf(1337L)));
+  }
+
+  @Test
+  public void getSignedByIssuer_generatesACertificateWithTheCorrectDates() throws Exception {
+    final X509Certificate generatedCertificate = subject
+      .getSignedByIssuer(generatedCertificateKeyPair, certificateGenerationParameters,
+        certificateAuthorityWithSubjectKeyId, issuerKey.getPrivate());
+
     assertThat(generatedCertificate.getNotBefore().toString(), equalTo(Date.from(now).toString()));
     assertThat(generatedCertificate.getNotAfter().toString(), equalTo(Date.from(later).toString()));
-    assertThat(generatedCertificate.getSubjectDN().toString(), containsString("CN=my cert name"));
+  }
+
+  @Test
+  public void getSignedByIssuer_generatesACertificateWithTheCorrectPublicKey() throws Exception {
+    final X509Certificate generatedCertificate = subject
+      .getSignedByIssuer(generatedCertificateKeyPair, certificateGenerationParameters,
+        certificateAuthorityWithSubjectKeyId, issuerKey.getPrivate());
+
     assertThat(generatedCertificate.getPublicKey(), equalTo(generatedCertificateKeyPair.getPublic()));
-    assertThat(generatedCertificate.getSigAlgName(), equalTo("SHA256WITHRSA"));
-    generatedCertificate.verify(issuerKey.getPublic());
+  }
+
+  @Test
+  public void getSignedByIssuer_generatesACertificateWithTheCorrectConstraints() throws Exception {
+    final X509Certificate generatedCertificate = subject
+      .getSignedByIssuer(generatedCertificateKeyPair, certificateGenerationParameters,
+        certificateAuthorityWithSubjectKeyId, issuerKey.getPrivate());
 
     final byte[] isCaExtension = generatedCertificate.getExtensionValue(Extension.basicConstraints.getId());
     assertThat(Arrays.copyOfRange(isCaExtension, 2, isCaExtension.length),
       equalTo(new BasicConstraints(true).getEncoded()));
+  }
+
+  @Test
+  public void getSignedByIssuer_generatesACertificateWithTheCorrectAlgorithm() throws Exception {
+    final X509Certificate generatedCertificate = subject
+      .getSignedByIssuer(generatedCertificateKeyPair, certificateGenerationParameters,
+        certificateAuthorityWithSubjectKeyId, issuerKey.getPrivate());
+
+    assertThat(generatedCertificate.getSigAlgName(), equalTo("SHA256WITHRSA"));
+  }
+
+  @Test
+  public void getSignedByIssuer_generatesAValidCertificate() throws Exception {
+    final X509Certificate generatedCertificate = subject
+      .getSignedByIssuer(generatedCertificateKeyPair, certificateGenerationParameters,
+        certificateAuthorityWithSubjectKeyId, issuerKey.getPrivate());
+
+    generatedCertificate.verify(issuerKey.getPublic());
   }
 
   @Test
