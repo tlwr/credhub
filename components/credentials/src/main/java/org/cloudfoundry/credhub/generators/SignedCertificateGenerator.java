@@ -106,6 +106,7 @@ public class SignedCertificateGenerator {
       Extension.subjectKeyIdentifier,
       false,
       getSubjectKeyIdentifierFromKeyInfo(keyPair.getPublic()));
+
     if (params.getAlternativeNames() != null) {
       certificateBuilder
         .addExtension(Extension.subjectAlternativeName, false, params.getAlternativeNames());
@@ -120,21 +121,22 @@ public class SignedCertificateGenerator {
         .addExtension(Extension.extendedKeyUsage, false, params.getExtendedKeyUsage());
     }
 
-    if (caSubjectKeyIdentifier.getKeyIdentifier() != null) {
-      AuthorityKeyIdentifier authorityKeyIdentifier;
-      if (issuerCertificate != null) {
-        authorityKeyIdentifier = new AuthorityKeyIdentifier(jcaX509ExtensionUtils
-                .createAuthorityKeyIdentifier(issuerCertificate).getKeyIdentifier());
-      } else {
-        authorityKeyIdentifier = jcaX509ExtensionUtils.createAuthorityKeyIdentifier(keyPair.getPublic());
+    if (issuerCertificate == null) {
+      // When issuerCertificate is null the resulting certificate is self-signed
+      // When certificates are self-signed they have identical authority key identifier and subject key identifiers
+      // AKI and SKI are derived from the public key
+      AuthorityKeyIdentifier authorityKeyIdentifier = jcaX509ExtensionUtils.createAuthorityKeyIdentifier(keyPair.getPublic());
+      certificateBuilder.addExtension(Extension.authorityKeyIdentifier, false, authorityKeyIdentifier);
+    } else {
+      SubjectKeyIdentifier issuerSKI = getSubjectKeyIdentifierFrom(issuerCertificate);
+      // Only set an authority key identifier if the CA has a subject key identifier
+      if (issuerSKI != null) {
+        AuthorityKeyIdentifier authorityKeyIdentifier = new AuthorityKeyIdentifier(issuerSKI.getKeyIdentifier());
+        certificateBuilder.addExtension(Extension.authorityKeyIdentifier, false, authorityKeyIdentifier);
       }
-
-      certificateBuilder
-        .addExtension(Extension.authorityKeyIdentifier, false, authorityKeyIdentifier);
     }
 
-    certificateBuilder
-      .addExtension(Extension.basicConstraints, true, new BasicConstraints(params.isCa()));
+    certificateBuilder.addExtension(Extension.basicConstraints, true, new BasicConstraints(params.isCa()));
 
     final ContentSigner contentSigner = jcaContentSignerBuilder.build(issuerKey);
 
@@ -153,8 +155,11 @@ public class SignedCertificateGenerator {
 
   private SubjectKeyIdentifier getSubjectKeyIdentifierFrom(final X509Certificate certificate) throws Exception {
     final byte[] extensionValue = certificate.getExtensionValue(Extension.subjectKeyIdentifier.getId());
-    return extensionValue == null ?
-      new SubjectKeyIdentifier(null) :
-      SubjectKeyIdentifier.getInstance(parseExtensionValue(extensionValue));
+
+    if (extensionValue == null) {
+      return null;
+    }
+
+    return SubjectKeyIdentifier.getInstance(parseExtensionValue(extensionValue));
   }
 }
