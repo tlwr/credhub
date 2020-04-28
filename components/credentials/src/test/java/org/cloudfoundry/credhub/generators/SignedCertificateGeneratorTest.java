@@ -154,12 +154,23 @@ public class SignedCertificateGeneratorTest {
   }
 
   @Test
-  public void getSelfSigned_generatesACertificateWithTheRightValues() throws Exception {
+  public void getSelfSigned_generatesACertificateWithTheCorrectIssuerAndSubject() throws Exception {
     final X509Certificate generatedCertificate = subject.getSelfSigned(generatedCertificateKeyPair, certificateGenerationParameters);
 
     assertThat(generatedCertificate.getIssuerDN().getName(), containsString("CN=my cert name"));
     assertThat(generatedCertificate.getSubjectDN().toString(), containsString("CN=my cert name"));
+  }
+
+  @Test
+  public void getSelfSigned_generatesAValidCertificate() throws Exception {
+    final X509Certificate generatedCertificate = subject.getSelfSigned(generatedCertificateKeyPair, certificateGenerationParameters);
+
     generatedCertificate.verify(generatedCertificateKeyPair.getPublic());
+  }
+
+  @Test
+  public void getSelfSigned_generatesACertificateWithIdenticalSKIAndAKI() throws Exception {
+    final X509Certificate generatedCertificate = subject.getSelfSigned(generatedCertificateKeyPair, certificateGenerationParameters);
 
     final byte[] authorityKeyIdDer = generatedCertificate.getExtensionValue(Extension.authorityKeyIdentifier.getId());
     final AuthorityKeyIdentifier authorityKeyIdentifier = AuthorityKeyIdentifier.getInstance(parseExtensionValue(authorityKeyIdDer));
@@ -168,6 +179,12 @@ public class SignedCertificateGeneratorTest {
     expectedSubjectKeyIdentifier = jcaX509ExtensionUtils.createSubjectKeyIdentifier(generatedCertificateKeyPair.getPublic()).getKeyIdentifier();
 
     assertThat(authorityKeyId, equalTo(expectedSubjectKeyIdentifier));
+  }
+
+  @Test
+  public void getSelfSigned_generatesACertificateWithTheCorrectSerialNumber() throws Exception {
+    final X509Certificate generatedCertificate = subject.getSelfSigned(generatedCertificateKeyPair, certificateGenerationParameters);
+
     assertThat(generatedCertificate.getSerialNumber(), equalTo(BigInteger.valueOf(1337)));
   }
 
